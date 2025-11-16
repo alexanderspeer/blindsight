@@ -1,0 +1,65 @@
+# OS-specific
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+Icon?
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.python-version
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pylint.d/
+.tox/
+.cache/
+.venv/
+venv/
+env/
+ENV/
+build/
+dist/
+*.egg-info/
+.ipynb_checkpoints/
+.coverage
+.coverage.*
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
+*.log
+logs/
+
+# IDE/editor
+.vscode/
+.idea/
+*.code-workspace
+
+# Environment files (keep secrets local)
+.env
+.env.*
+
+# CMake/C++ build artifacts (MDPI2021/LIFL_IE)
+MDPI2021/LIFL_IE/build/
+MDPI2021/LIFL_IE/CMakeFiles/
+MDPI2021/LIFL_IE/CMakeCache.txt
+MDPI2021/LIFL_IE/Makefile
+MDPI2021/LIFL_IE/cmake_install.cmake
+MDPI2021/LIFL_IE/*.a
+MDPI2021/LIFL_IE/*.lib
+MDPI2021/LIFL_IE/*.dll
+MDPI2021/LIFL_IE/*.dylib
+MDPI2021/LIFL_IE/*.so
+MDPI2021/LIFL_IE/*.exe
+
+# Large example/data files
+*.pckl
+*.mat
+MDPI2021/Examples/**/files/
+
+
