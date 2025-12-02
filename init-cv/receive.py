@@ -1,3 +1,24 @@
+#this is how you run the ssh pi:
+
+# rpicam-vid \
+#     --codec h264 \
+#     --profile high \
+#     --level 4.2 \
+#     --width 1280 \
+#     --height 720 \
+#     --framerate 30 \
+#     --bitrate 8000000 \
+#     --inline \
+#     --intra 30 \
+#     --timeout 0 \
+#     --listen \
+#     -o tcp://0.0.0.0:5001
+
+
+# then once you have run that command on ssh speeriocheerio@<PI_IP_ADDRESS>
+
+# you can run the following script:
+
 import cv2
 import subprocess
 import numpy as np
