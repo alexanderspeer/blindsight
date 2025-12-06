@@ -19,6 +19,9 @@
 
 cmake_minimum_required( VERSION 2.8.12 )
 
+# Add OpenMP include path for macOS
+include_directories(/opt/homebrew/opt/libomp/include)
+
 # This CMakeLists.txt is configured to build your external module for NEST. For
 # illustrative reasons this module is called 'my' (change SHORT_NAME to your
 # preferred module name). NEST requires you to extend the 'SLIModule' (see

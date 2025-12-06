@@ -326,7 +326,7 @@ mynest::aeif_psc_exp_peak::Buffers_::Buffers_( const Buffers_&, mynest::aeif_psc
  * ---------------------------------------------------------------- */
 
 mynest::aeif_psc_exp_peak::aeif_psc_exp_peak()
-  : Archiving_Node()
+  : ArchivingNode()
   , P_()
   , S_( P_ )
   , B_( *this )
@@ -335,7 +335,7 @@ mynest::aeif_psc_exp_peak::aeif_psc_exp_peak()
 }
 
 mynest::aeif_psc_exp_peak::aeif_psc_exp_peak( const aeif_psc_exp_peak& n )
-  : Archiving_Node( n )
+  : ArchivingNode( n )
   , P_( n.P_ )
   , S_( n.S_ )
   , B_( n.B_, *this )
@@ -364,10 +364,9 @@ mynest::aeif_psc_exp_peak::~aeif_psc_exp_peak()
  * ---------------------------------------------------------------- */
 
 void
-mynest::aeif_psc_exp_peak::init_state_( const Node& proto )
+mynest::aeif_psc_exp_peak::init_state_()
 {
-  const aeif_psc_exp_peak& pr = downcast< aeif_psc_exp_peak >( proto );
-  S_ = pr.S_;
+  S_ = State_(P_);
 }
 
 void
@@ -376,7 +375,7 @@ mynest::aeif_psc_exp_peak::init_buffers_()
   B_.spike_exc_.clear(); // includes resize
   B_.spike_inh_.clear(); // includes resize
   B_.currents_.clear();  // includes resize
-  Archiving_Node::clear_history();
+  ArchivingNode::clear_history();
 
   B_.logger_.reset();
 
@@ -441,6 +440,12 @@ mynest::aeif_psc_exp_peak::calibrate()
   V_.refractory_counts_ = nest::Time( nest::Time::ms( P_.t_ref_ ) ).get_steps();
   // since t_ref_ >= 0, this can only fail in error
   assert( V_.refractory_counts_ >= 0 );
+}
+
+void
+mynest::aeif_psc_exp_peak::pre_run_hook()
+{
+  // Empty implementation - required by NEST 3.x
 }
 
 /* ----------------------------------------------------------------

@@ -27,7 +27,7 @@
 
 // Includes from libnestutil:
 #include "numerics.h"
-#include "propagator_stability.h"
+// #include "propagator_stability.h"  // Removed in NEST 3.x - function may be in numerics.h
 
 #include <algorithm>
 #include <iterator>
@@ -70,8 +70,8 @@ RecordablesMap< mynest::lifl_psc_exp_ie >::create()
 {
   // use standard names whereever you can for consistency!
   insert_( names::V_m, &mynest::lifl_psc_exp_ie::get_V_m_ );
-  insert_( names::weighted_spikes_ex, &mynest::lifl_psc_exp_ie::get_weighted_spikes_ex_ );
-  insert_( names::weighted_spikes_in, &mynest::lifl_psc_exp_ie::get_weighted_spikes_in_ );
+  // insert_( names::weighted_spikes_ex, &mynest::lifl_psc_exp_ie::get_weighted_spikes_ex_ );  // Removed in NEST 3.x
+  // insert_( names::weighted_spikes_in, &mynest::lifl_psc_exp_ie::get_weighted_spikes_in_ );  // Removed in NEST 3.x
   insert_( names::I_syn_ex, &mynest::lifl_psc_exp_ie::get_I_syn_ex_ );
   insert_( names::I_syn_in, &mynest::lifl_psc_exp_ie::get_I_syn_in_ );
   insert_( names::soma_exc, &mynest::lifl_psc_exp_ie::get_soma_exc_ );
@@ -254,7 +254,7 @@ mynest::lifl_psc_exp_ie::Buffers_::Buffers_( const Buffers_&, lifl_psc_exp_ie& n
  * ---------------------------------------------------------------- */
 
 mynest::lifl_psc_exp_ie::lifl_psc_exp_ie()
-  : Archiving_Node()
+  : ArchivingNode()
   , P_()
   , S_()
   , B_( *this )
@@ -263,7 +263,7 @@ mynest::lifl_psc_exp_ie::lifl_psc_exp_ie()
 }
 
 mynest::lifl_psc_exp_ie::lifl_psc_exp_ie( const lifl_psc_exp_ie& n )
-  : Archiving_Node( n )
+  : ArchivingNode( n )
   , P_( n.P_ )
   , S_( n.S_ )
   , B_( n.B_, *this )
@@ -275,10 +275,9 @@ mynest::lifl_psc_exp_ie::lifl_psc_exp_ie( const lifl_psc_exp_ie& n )
  * ---------------------------------------------------------------- */
 
 void
-mynest::lifl_psc_exp_ie::init_state_( const Node& proto )
+mynest::lifl_psc_exp_ie::init_state_()
 {
-  const lifl_psc_exp_ie& pr = downcast< lifl_psc_exp_ie >( proto );
-  S_ = pr.S_;
+  S_ = State_();
 }
 
 void
@@ -288,7 +287,7 @@ mynest::lifl_psc_exp_ie::init_buffers_()
   B_.spikes_in_.clear(); // includes resize
   B_.currents_.clear();  // includes resize
   B_.logger_.reset();
- /// Archiving_Node::clear_history_();
+ /// ArchivingNode::clear_history_();
 }
 
 void
@@ -318,11 +317,11 @@ mynest::lifl_psc_exp_ie::calibrate()
   // P22_ = 1.0-h/Tau_;
 
   // these are determined according to a numeric stability criterion
-  V_.P21ex_ = propagator_32( P_.tau_ex_, P_.Tau_, P_.C_, h );
-  V_.P21in_ = propagator_32( P_.tau_in_, P_.Tau_, P_.C_, h );
+  // V_.P21ex_ = propagator_32( P_.tau_ex_, P_.Tau_, P_.C_, h );  // propagator_32 removed in NEST 3.x
+  // V_.P21in_ = propagator_32( P_.tau_in_, P_.Tau_, P_.C_, h );
 
-  // P21ex_ = h/C_;
-  // P21in_ = h/C_;
+  V_.P21ex_ = h/P_.C_;
+  V_.P21in_ = h/P_.C_;
 
   V_.P20_ = P_.Tau_ / P_.C_ * ( 1.0 - V_.P22_ );
   // P20_ = h/C_;
@@ -358,6 +357,12 @@ mynest::lifl_psc_exp_ie::calibrate()
 }
 
 void
+mynest::lifl_psc_exp_ie::pre_run_hook()
+{
+  // Empty implementation - required by NEST 3.x
+}
+
+void
 mynest::lifl_psc_exp_ie::update( const nest::Time& origin, const long from, const long to )
 {
   assert(
@@ -376,7 +381,7 @@ mynest::lifl_psc_exp_ie::update( const nest::Time& origin, const long from, cons
      nest::kernel().event_delivery_manager.send( *this, se, lag );
      S_.r_ref_ = V_.RefractoryCounts_;
 
-     S_.hist_.push_back(nest::Archiving_Node::get_spiketime_ms());
+     S_.hist_.push_back(nest::ArchivingNode::get_spiketime_ms());
 
      }
 
@@ -470,7 +475,7 @@ mynest::lifl_psc_exp_ie::handle( nest::SpikeEvent& e )
     for (size_t i=0; i < origSize; i++)
     {
       long modulator = P_.stimulator_[ i ];
-      long source_gid = e.get_sender_gid();
+      long source_gid = e.get_sender_node_id();
 
       if (source_gid == modulator) // If gID of input current is from an Stimulator (IE modulator)
       {
@@ -481,7 +486,7 @@ mynest::lifl_psc_exp_ie::handle( nest::SpikeEvent& e )
   // which increases the access counter for these entries.
   // At registration, all entries' access counters of
   // history[0, ..., t_last_spike - dendritic_delay] have been
-  // incremented by Archiving_Node::register_stdp_connection(). See bug #218 for
+  // incremented by ArchivingNode::register_stdp_connection(). See bug #218 for
   // details.
   //target->get_history( 0.0, t_spike, &start, &finish );
 

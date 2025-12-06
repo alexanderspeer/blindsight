@@ -130,7 +130,7 @@ namespace mynest
  */
 extern "C" int aeif_psc_exp_peak_dynamics( double, const double*, double*, void* );
 
-class aeif_psc_exp_peak : public nest::Archiving_Node
+class aeif_psc_exp_peak : public nest::ArchivingNode
 {
 
 public:
@@ -146,23 +146,24 @@ public:
   using nest::Node::handle;
   using nest::Node::handles_test_event;
 
-  nest::port send_test_event( nest::Node&, nest::rport, nest::synindex, bool );
+  size_t send_test_event( nest::Node&, size_t, nest::synindex, bool );
 
   void handle( nest::SpikeEvent& );
   void handle( nest::CurrentEvent& );
   void handle( nest::DataLoggingRequest& );
 
-  nest::port handles_test_event( nest::SpikeEvent&, nest::rport );
-  nest::port handles_test_event( nest::CurrentEvent&, nest::rport );
-  nest::port handles_test_event( nest::DataLoggingRequest&, nest::rport );
+  size_t handles_test_event( nest::SpikeEvent&, size_t );
+  size_t handles_test_event( nest::CurrentEvent&, size_t );
+  size_t handles_test_event( nest::DataLoggingRequest&, size_t );
 
   void get_status( DictionaryDatum& ) const;
   void set_status( const DictionaryDatum& );
 
 private:
-  void init_state_( const Node& proto );
+  void init_state_();
   void init_buffers_();
   void calibrate();
+  void pre_run_hook() override;
   void update( const nest::Time&, const long, const long );
 
   // END Boilerplate function declarations ----------------------------
@@ -322,9 +323,9 @@ public:
   static nest::RecordablesMap< aeif_psc_exp_peak > recordablesMap_;
 };
 
-inline nest::port
+inline size_t
 mynest::aeif_psc_exp_peak::send_test_event( nest::Node& target,
-  nest::rport receptor_type,
+  size_t receptor_type,
   nest::synindex,
   bool )
 {
@@ -334,8 +335,8 @@ mynest::aeif_psc_exp_peak::send_test_event( nest::Node& target,
   return target.handles_test_event( e, receptor_type );
 }
 
-inline nest::port
-mynest::aeif_psc_exp_peak::handles_test_event( nest::SpikeEvent&, nest::rport receptor_type )
+inline size_t
+mynest::aeif_psc_exp_peak::handles_test_event( nest::SpikeEvent&, size_t receptor_type )
 {
   if ( receptor_type != 0 )
   {
@@ -344,8 +345,8 @@ mynest::aeif_psc_exp_peak::handles_test_event( nest::SpikeEvent&, nest::rport re
   return 0;
 }
 
-inline nest::port
-mynest::aeif_psc_exp_peak::handles_test_event( nest::CurrentEvent&, nest::rport receptor_type )
+inline size_t
+mynest::aeif_psc_exp_peak::handles_test_event( nest::CurrentEvent&, size_t receptor_type )
 {
   if ( receptor_type != 0 )
   {
@@ -354,8 +355,8 @@ mynest::aeif_psc_exp_peak::handles_test_event( nest::CurrentEvent&, nest::rport 
   return 0;
 }
 
-inline nest::port
-mynest::aeif_psc_exp_peak::handles_test_event( nest::DataLoggingRequest& dlr, nest::rport receptor_type )
+inline size_t
+mynest::aeif_psc_exp_peak::handles_test_event( nest::DataLoggingRequest& dlr, size_t receptor_type )
 {
   if ( receptor_type != 0 )
   {
@@ -369,7 +370,7 @@ aeif_psc_exp_peak::get_status( DictionaryDatum& d ) const
 {
   P_.get( d );
   S_.get( d );
-  Archiving_Node::get_status( d );
+  ArchivingNode::get_status( d );
 
   ( *d )[ nest::names::recordables ] = recordablesMap_.get_list();
 }
@@ -386,7 +387,7 @@ aeif_psc_exp_peak::set_status( const DictionaryDatum& d )
   // write them back to (P_, S_) before we are also sure that
   // the properties to be set in the parent class are internally
   // consistent.
-  Archiving_Node::set_status( d );
+  ArchivingNode::set_status( d );
 
   // if we get here, temporaries contain consistent set of properties
   P_ = ptmp;

@@ -1,30 +1,9 @@
-#this is how you run the ssh pi:
-
-# rpicam-vid \
-#     --codec h264 \
-#     --profile high \
-#     --level 4.2 \
-#     --width 1280 \
-#     --height 720 \
-#     --framerate 30 \
-#     --bitrate 8000000 \
-#     --inline \
-#     --intra 30 \
-#     --timeout 0 \
-#     --listen \
-#     -o tcp://0.0.0.0:5001
-
-
-# then once you have run that command on ssh speeriocheerio@<PI_IP_ADDRESS>
-
-# you can run the following script:
-
 import cv2
 import subprocess
 import numpy as np
 
-WIDTH = 1280
-HEIGHT = 720
+WIDTH = 640
+HEIGHT = 360
 
 FFMPEG_CMD = [
     "ffmpeg",
@@ -37,8 +16,6 @@ FFMPEG_CMD = [
     "-pix_fmt", "bgr24",
     "-"
 ]
-
-
 
 p = subprocess.Popen(
     FFMPEG_CMD,

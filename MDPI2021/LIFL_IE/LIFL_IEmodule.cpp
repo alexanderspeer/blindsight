@@ -32,7 +32,7 @@
 // Includes from nestkernel:
 #include "connection_manager_impl.h"
 #include "connector_model_impl.h"
-#include "dynamicloader.h"
+// #include "dynamicloader.h"  // Removed in NEST 3.x
 #include "exceptions.h"
 #include "genericmodel.h"
 #include "genericmodel_impl.h"
@@ -81,7 +81,7 @@ mynest::LIFL_IEmodule::LIFL_IEmodule()
   // register this module at the dynamic loader
   // this is needed to allow for linking in this module at compile time
   // all registered modules will be initialized by the main app's dynamic loader
-  nest::DynamicLoaderModule::registerLinkedModule( this );
+  // nest::DynamicLoaderModule::registerLinkedModule( this );  // Removed in NEST 3.x
 #endif
 }
 
@@ -116,3 +116,11 @@ mynest::LIFL_IEmodule::init( SLIInterpreter* i )
     "aeif_psc_exp_peak" );
 
 } // LIFL_IEmodule::init()
+
+// Module export for NEST 3.x - creates and returns the module instance
+extern "C" SLIModule*
+module( void )
+{
+  static mynest::LIFL_IEmodule* module_instance = new mynest::LIFL_IEmodule();
+  return module_instance;
+}
