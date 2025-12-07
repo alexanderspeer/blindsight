@@ -122,6 +122,10 @@ class V1VisionPipeline:
             print(f"  TOTAL:      {t_total*1000:.2f} ms ({1.0/t_total:.2f} FPS)")
             print("="*80 + "\n")
         
+        # Special summary at frame 10
+        if self.frame_count == 10:
+            self._print_frame_10_summary(v1_results, spike_trains)
+        
         return {
             'original_frame': frame,
             'processed_frame': processed_frame,
@@ -635,6 +639,58 @@ class V1VisionPipeline:
         for orientation in sorted(v1_results['orientations'].keys()):
             rate = v1_results['orientations'][orientation]['layer_23']['mean_rate']
             print(f"    {orientation}°: {rate:.2f} Hz")
+    
+    def _print_frame_10_summary(self, v1_results, spike_trains):
+        """Print comprehensive summary after frame 10"""
+        print("\n" + "="*80)
+        print("FRAME 10 COMPREHENSIVE SUMMARY")
+        print("="*80)
+        
+        # Spike encoding summary
+        print("\nSPIKE ENCODING SUMMARY:")
+        total_spikes = sum(len(spike_trains[ori]['neuron_ids']) for ori in spike_trains)
+        print(f"  Total spikes generated: {total_spikes}")
+        for ori in sorted(spike_trains.keys()):
+            n_spikes = len(spike_trains[ori]['neuron_ids'])
+            if n_spikes > 0:
+                min_t = spike_trains[ori]['spike_times'].min()
+                max_t = spike_trains[ori]['spike_times'].max()
+                mean_t = spike_trains[ori]['spike_times'].mean()
+                print(f"  {ori}deg: {n_spikes} spikes, times: {min_t:.1f}-{max_t:.1f}ms (mean={mean_t:.1f})")
+            else:
+                print(f"  {ori}deg: 0 spikes")
+        
+        # V1 layer summary
+        print("\nV1 LAYER FIRING RATES (across all orientations):")
+        for layer_name in ['layer_4', 'layer_23', 'layer_5', 'layer_6']:
+            all_rates = []
+            for ori in v1_results['orientations']:
+                rates = v1_results['orientations'][ori][layer_name]['firing_rates']
+                all_rates.extend(rates)
+            all_rates = np.array(all_rates)
+            
+            active_pct = (all_rates > 1.0).sum() / len(all_rates) * 100
+            print(f"  {layer_name}:")
+            print(f"    Mean: {all_rates.mean():.2f} Hz, Median: {np.median(all_rates):.2f} Hz")
+            print(f"    Min: {all_rates.min():.2f} Hz, Max: {all_rates.max():.2f} Hz")
+            print(f"    Active (>1 Hz): {active_pct:.1f}%")
+        
+        # Orientation selectivity
+        print("\nORIENTATION SELECTIVITY (Layer 2/3 mean rates):")
+        for ori in sorted(v1_results['orientations'].keys()):
+            rate = v1_results['orientations'][ori]['layer_23']['mean_rate']
+            print(f"  {ori}deg: {rate:.2f} Hz")
+        
+        # Configuration reminder
+        print("\nCURRENT CONFIGURATION:")
+        from config import GRID_CONFIG, SPIKE_CONFIG, V1_ARCHITECTURE
+        print(f"  RF size: {GRID_CONFIG['receptive_field_size']} px")
+        print(f"  Spike timing: {SPIKE_CONFIG['spike_start_ms']}-{SPIKE_CONFIG['max_latency_ms']} ms")
+        print(f"  LGN→L4 weight: {V1_ARCHITECTURE['lgn_to_ss4_weight']}")
+        print(f"  Feedforward weight: {V1_ARCHITECTURE['feedforward_weight']}")
+        print(f"  Spike threshold: {SPIKE_CONFIG['threshold']}")
+        
+        print("\n" + "="*80 + "\n")
     
     def _debug_decoder_output(self, v1_output):
         """Debug decoder output"""

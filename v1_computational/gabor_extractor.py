@@ -125,11 +125,17 @@ class GaborFeatureExtractor:
                 
                 rf_patch = filtered_image[y_start:y_end, x_start:x_end]
                 
-                # Response is the mean absolute response in receptive field
+                # Response is the MAX absolute response in receptive field
+                # FIX: Use max instead of mean for better selectivity
                 # Use absolute value to capture both ON and OFF responses
-                response = np.mean(np.abs(rf_patch))
+                response = np.max(np.abs(rf_patch))
                 
                 grid[row, col] = response
+        
+        # FIX: Normalize grid to expand dynamic range
+        grid_min, grid_max = grid.min(), grid.max()
+        if grid_max > grid_min:
+            grid = (grid - grid_min) / (grid_max - grid_min) * 3.0
         
         return grid
     

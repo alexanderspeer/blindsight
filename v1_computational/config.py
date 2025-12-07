@@ -16,7 +16,7 @@ GRID_CONFIG = {
     'n_neurons': 144,           # Total number per layer (12x12 grid) - OPTIMIZED
     'grid_rows': 12,            # Reduced from 18 for speed
     'grid_cols': 12,            # Reduced from 18 for speed
-    'receptive_field_size': 64,
+    'receptive_field_size': 20, # FIX 3: Reduced from 64 - matches ~2x stride for proper 50% overlap
     'overlap': 0.5,
 }
 
@@ -36,9 +36,9 @@ SPIKE_CONFIG = {
     'max_spike_rate': 200.0,
     'min_spike_rate': 10.0,
     'spike_window_ms': 150.0,
-    'spike_start_ms': 50.0,
-    'min_latency_ms': 43.0,
-    'max_latency_ms': 200.0,
+    'spike_start_ms': 0.0,       # FIX 1: Align with V1 stimulus window
+    'min_latency_ms': 0.0,        # FIX 1: Start immediately
+    'max_latency_ms': 100.0,      # FIX 1: Fit within 100ms stimulus window
     'jitter_ms': 0.3,
     'threshold': 0.5,  # INCREASED from 0.1 - only strong features should spike!
 }
@@ -57,10 +57,10 @@ V1_ARCHITECTURE = {
     'layer_6_inh': 49,          # Inhibitory interneurons
     
     # Connection weights (from MDPI2021 model)
-    'lgn_to_ss4_weight': 15000.0,
+    'lgn_to_ss4_weight': 5000.0,  # supposed to be 5000 but 
     'lateral_weight': 0.0,        # DISABLED FOR DEBUG - was 100.0 (testing if recurrence causes runaway)
     'inhibitory_weight': 0.0,     # DISABLED FOR DEBUG - was -100.0
-    'feedforward_weight': 10.0,  # Keep feedforward enabled
+    'feedforward_weight': 50,   #supposed to be 50, 
     
     # Connection probabilities
     'layer_23_recurrent_indegree': 36,
