@@ -10,7 +10,7 @@ from gabor_extractor import GaborFeatureExtractor
 from spike_encoder import SpikeEncoder
 from v1_model import ComputationalV1Model
 from v1_decoder import V1Decoder
-from config import VIDEO_CONFIG, PROCESSING_CONFIG, VISUALIZATION_CONFIG
+from config import VIDEO_CONFIG, PROCESSING_CONFIG, VISUALIZATION_CONFIG, DEBUG_CONFIG
 
 
 class V1VisionPipeline:
@@ -22,6 +22,10 @@ class V1VisionPipeline:
         """Initialize all pipeline components"""
         print("🚀 Initializing V1 Vision Pipeline...")
         print("=" * 60)
+        
+        # Debug settings
+        self.debug_enabled = DEBUG_CONFIG['enabled']
+        self.debug_interval = DEBUG_CONFIG['print_every_n_frames']
         
         # Create components
         self.gabor_extractor = GaborFeatureExtractor()
@@ -55,44 +59,68 @@ class V1VisionPipeline:
             Dict with all intermediate and final outputs
         """
         t_start = time.time()
+        should_debug = self.debug_enabled and (self.frame_count % self.debug_interval == 0)
+        
+        if should_debug:
+            print("\n" + "="*80)
+            print(f"DEBUG FRAME {self.frame_count}")
+            print("="*80)
         
         # 1. Preprocess frame
         t1 = time.time()
         processed_frame = self._preprocess_frame(frame)
         t_preprocess = time.time() - t1
         
+        if should_debug:
+            self._debug_preprocessing(frame, processed_frame)
+        
         # 2. Extract Gabor features
         t1 = time.time()
         features, gabor_responses = self.gabor_extractor.extract_features(processed_frame)
         t_gabor = time.time() - t1
+        
+        if should_debug:
+            self._debug_gabor_features(features, gabor_responses)
         
         # 3. Encode to spike trains
         t1 = time.time()
         spike_trains = self.spike_encoder.encode_features_to_spikes(features)
         t_encode = time.time() - t1
         
+        if should_debug:
+            self._debug_spike_trains(spike_trains)
+        
         # 4. Run V1 simulation
         t1 = time.time()
         v1_results = self.v1_model.run_stimulus(spike_trains, warmup=warmup)
         t_v1 = time.time() - t1
+        
+        if should_debug:
+            self._debug_v1_results(v1_results)
         
         # 5. Decode V1 output
         t1 = time.time()
         v1_output = self.decoder.decode_v1_output(v1_results, layer='layer_23')
         t_decode = time.time() - t1
         
+        if should_debug:
+            self._debug_decoder_output(v1_output)
+        
         t_total = time.time() - t_start
         
         # Track performance
         self.frame_count += 1
         
-        # Debug: Check if neurons are firing
-        if self.frame_count % 10 == 0:  # Every 10 frames
-            for orientation in [0, 45, 90, 135]:
-                l23_rate = v1_results['orientations'][orientation]['layer_23']['mean_rate']
-                l4_rate = v1_results['orientations'][orientation]['layer_4']['mean_rate']
-                if self.frame_count == 10:
-                    print(f"[Debug] {orientation}deg - Layer 4: {l4_rate:.1f} Hz, Layer 2/3: {l23_rate:.1f} Hz")
+        if should_debug:
+            print("\n" + "-"*80)
+            print(f"TIMING SUMMARY (Frame {self.frame_count-1}):")
+            print(f"  Preprocess: {t_preprocess*1000:.2f} ms")
+            print(f"  Gabor:      {t_gabor*1000:.2f} ms")
+            print(f"  Encode:     {t_encode*1000:.2f} ms")
+            print(f"  V1 Sim:     {t_v1*1000:.2f} ms")
+            print(f"  Decode:     {t_decode*1000:.2f} ms")
+            print(f"  TOTAL:      {t_total*1000:.2f} ms ({1.0/t_total:.2f} FPS)")
+            print("="*80 + "\n")
         
         return {
             'original_frame': frame,
@@ -476,4 +504,177 @@ class V1VisionPipeline:
         self.v1_model.reset()
         self.frame_count = 0
         self.start_time = None
+    
+    def _debug_preprocessing(self, original, processed):
+        """Debug preprocessing stage"""
+        if not DEBUG_CONFIG['show_array_shapes']:
+            return
+        
+        print("\n[1] PREPROCESSING:")
+        print(f"  Input shape: {original.shape}")
+        print(f"  Output shape: {processed.shape}")
+        
+        if DEBUG_CONFIG['show_distributions']:
+            print(f"  Input range: [{original.min():.2f}, {original.max():.2f}], mean={original.mean():.2f}")
+            print(f"  Output range: [{processed.min():.2f}, {processed.max():.2f}], mean={processed.mean():.2f}")
+        
+        if DEBUG_CONFIG['check_for_nans']:
+            if np.isnan(processed).any():
+                print("  WARNING: NaN values detected in preprocessed frame!")
+    
+    def _debug_gabor_features(self, features, gabor_responses):
+        """Debug Gabor feature extraction"""
+        if not DEBUG_CONFIG['show_gabor_stats']:
+            return
+        
+        print("\n[2] GABOR FEATURE EXTRACTION:")
+        
+        for orientation in sorted(features.keys()):
+            feature_grid = features[orientation]
+            gabor_response = gabor_responses[orientation]
+            
+            print(f"\n  Orientation {orientation}°:")
+            
+            if DEBUG_CONFIG['show_array_shapes']:
+                print(f"    Response shape: {gabor_response.shape}")
+                print(f"    Feature grid shape: {feature_grid.shape}")
+            
+            if DEBUG_CONFIG['show_distributions']:
+                print(f"    Gabor response - min: {gabor_response.min():.4f}, max: {gabor_response.max():.4f}, "
+                      f"mean: {gabor_response.mean():.4f}, std: {gabor_response.std():.4f}")
+                print(f"    Feature grid - min: {feature_grid.min():.4f}, max: {feature_grid.max():.4f}, "
+                      f"mean: {feature_grid.mean():.4f}, std: {feature_grid.std():.4f}")
+            
+            if DEBUG_CONFIG['check_for_nans']:
+                if np.isnan(feature_grid).any():
+                    print(f"    WARNING: NaN values in feature grid!")
+            
+            if DEBUG_CONFIG['check_for_zeros']:
+                if feature_grid.max() == 0:
+                    print(f"    WARNING: Feature grid is all zeros!")
+                else:
+                    non_zero_pct = (feature_grid > 0.01).sum() / feature_grid.size * 100
+                    print(f"    Active cells: {non_zero_pct:.1f}% above threshold")
+    
+    def _debug_spike_trains(self, spike_trains):
+        """Debug spike encoding"""
+        if not DEBUG_CONFIG['show_spike_stats']:
+            return
+        
+        print("\n[3] SPIKE ENCODING:")
+        
+        total_spikes = 0
+        for orientation in sorted(spike_trains.keys()):
+            spike_data = spike_trains[orientation]
+            n_spikes = len(spike_data['neuron_ids'])
+            total_spikes += n_spikes
+            
+            print(f"\n  Orientation {orientation}°:")
+            print(f"    Number of spikes: {n_spikes}")
+            
+            if n_spikes > 0:
+                print(f"    Neurons that spiked: {len(np.unique(spike_data['neuron_ids']))}/144")
+                print(f"    Spike times - min: {spike_data['spike_times'].min():.2f} ms, "
+                      f"max: {spike_data['spike_times'].max():.2f} ms, "
+                      f"mean: {spike_data['spike_times'].mean():.2f} ms")
+                
+                # Show distribution of spike times
+                early_spikes = (spike_data['spike_times'] < 100).sum()
+                mid_spikes = ((spike_data['spike_times'] >= 100) & (spike_data['spike_times'] < 150)).sum()
+                late_spikes = (spike_data['spike_times'] >= 150).sum()
+                print(f"    Spike timing: early (<100ms): {early_spikes}, "
+                      f"mid (100-150ms): {mid_spikes}, late (>150ms): {late_spikes}")
+            else:
+                print(f"    WARNING: No spikes generated for this orientation!")
+            
+            if DEBUG_CONFIG['check_for_nans']:
+                if np.isnan(spike_data['spike_times']).any():
+                    print(f"    WARNING: NaN values in spike times!")
+        
+        print(f"\n  Total spikes across all orientations: {total_spikes}")
+        if total_spikes == 0:
+            print("  WARNING: No spikes generated at all! Check Gabor features and thresholds!")
+    
+    def _debug_v1_results(self, v1_results):
+        """Debug V1 simulation results"""
+        if not DEBUG_CONFIG['show_v1_layer_stats']:
+            return
+        
+        print("\n[4] V1 SIMULATION:")
+        
+        for orientation in sorted(v1_results['orientations'].keys()):
+            orient_data = v1_results['orientations'][orientation]
+            
+            print(f"\n  Orientation {orientation}°:")
+            
+            for layer_name in ['layer_4', 'layer_23', 'layer_5', 'layer_6']:
+                layer_data = orient_data[layer_name]
+                firing_rates = layer_data['firing_rates']
+                mean_rate = layer_data['mean_rate']
+                
+                print(f"    {layer_name}:")
+                print(f"      Shape: {firing_rates.shape}")
+                print(f"      Mean firing rate: {mean_rate:.2f} Hz")
+                
+                if DEBUG_CONFIG['show_distributions']:
+                    print(f"      Min: {firing_rates.min():.2f} Hz, Max: {firing_rates.max():.2f} Hz, "
+                          f"Std: {firing_rates.std():.2f} Hz")
+                
+                if DEBUG_CONFIG['check_for_zeros']:
+                    active_neurons = (firing_rates > 1.0).sum()
+                    total_neurons = firing_rates.size
+                    print(f"      Active neurons (>1 Hz): {active_neurons}/{total_neurons} "
+                          f"({active_neurons/total_neurons*100:.1f}%)")
+                
+                if DEBUG_CONFIG['check_for_nans']:
+                    if np.isnan(firing_rates).any():
+                        print(f"      WARNING: NaN values in firing rates!")
+        
+        # Summary statistics
+        print("\n  Cross-orientation comparison (Layer 2/3 mean rates):")
+        for orientation in sorted(v1_results['orientations'].keys()):
+            rate = v1_results['orientations'][orientation]['layer_23']['mean_rate']
+            print(f"    {orientation}°: {rate:.2f} Hz")
+    
+    def _debug_decoder_output(self, v1_output):
+        """Debug decoder output"""
+        if not DEBUG_CONFIG['show_decoder_stats']:
+            return
+        
+        print("\n[5] DECODER OUTPUT:")
+        
+        orientation_map = v1_output['orientation_map']
+        strength_map = v1_output['strength_map']
+        
+        if DEBUG_CONFIG['show_array_shapes']:
+            print(f"  Orientation map shape: {orientation_map.shape}")
+            print(f"  Strength map shape: {strength_map.shape}")
+        
+        if DEBUG_CONFIG['show_distributions']:
+            print(f"  Strength map - min: {strength_map.min():.2f}, max: {strength_map.max():.2f}, "
+                  f"mean: {strength_map.mean():.2f}, std: {strength_map.std():.2f}")
+        
+        # Count preferred orientations
+        print("\n  Preferred orientation distribution:")
+        for orientation in [0, 45, 90, 135]:
+            count = (orientation_map == orientation).sum()
+            percentage = count / orientation_map.size * 100
+            print(f"    {orientation}°: {count} pixels ({percentage:.1f}%)")
+        
+        no_response = (orientation_map == -1).sum()
+        if no_response > 0:
+            print(f"    No response: {no_response} pixels ({no_response/orientation_map.size*100:.1f}%)")
+        
+        if DEBUG_CONFIG['check_for_zeros']:
+            if strength_map.max() == 0:
+                print("  WARNING: Strength map is all zeros!")
+        
+        if DEBUG_CONFIG['check_for_nans']:
+            if np.isnan(strength_map).any():
+                print("  WARNING: NaN values in strength map!")
+        
+        # Check if decoder output makes sense
+        active_pixels = (strength_map > 0).sum()
+        print(f"\n  Active pixels (strength > 0): {active_pixels}/{strength_map.size} "
+              f"({active_pixels/strength_map.size*100:.1f}%)")
 

@@ -40,7 +40,7 @@ SPIKE_CONFIG = {
     'min_latency_ms': 43.0,
     'max_latency_ms': 200.0,
     'jitter_ms': 0.3,
-    'threshold': 0.1,
+    'threshold': 0.5,  # INCREASED from 0.1 - only strong features should spike!
 }
 
 # ==================== V1 ARCHITECTURE (matches MDPI2021 exactly) ====================
@@ -58,9 +58,9 @@ V1_ARCHITECTURE = {
     
     # Connection weights (from MDPI2021 model)
     'lgn_to_ss4_weight': 15000.0,
-    'lateral_weight': 100.0,
-    'inhibitory_weight': -100.0,
-    'feedforward_weight': 100.0,
+    'lateral_weight': 0.0,        # DISABLED FOR DEBUG - was 100.0 (testing if recurrence causes runaway)
+    'inhibitory_weight': 0.0,     # DISABLED FOR DEBUG - was -100.0
+    'feedforward_weight': 10.0,  # Keep feedforward enabled
     
     # Connection probabilities
     'layer_23_recurrent_indegree': 36,
@@ -82,18 +82,19 @@ V1_ARCHITECTURE = {
     'stimulus_time_ms': 100,    # Increased to 100ms to allow more neuron activity
     
     # Noise (Poisson background activity from MDPI2021)
-    'poisson_rate_l23': 1721500.0,
-    'poisson_rate_l5': 1740000.0,
-    'poisson_rate_l6': 1700000.0,
-    'poisson_rate_inh': 1750000.0,
+    # DISABLED FOR DEBUGGING - was causing constant 1200+ Hz firing in all layers
+    'poisson_rate_l23': 0.0,
+    'poisson_rate_l5': 0.0,
+    'poisson_rate_l6': 0.0,
+    'poisson_rate_inh': 0.0,
     'poisson_weight': 5.0,
 }
 
 # ==================== PROCESSING SETTINGS ====================
 PROCESSING_CONFIG = {
-    'downsample_frame': True,
-    'downsample_width': 640,
-    'downsample_height': 360,
+    'downsample_frame': False,  # DISABLED - was upscaling 320x240 to 640x360, destroying edges!
+    'downsample_width': 320,    # Keep original resolution
+    'downsample_height': 240,   # Keep original resolution
     'normalize_contrast': True,
     'gaussian_blur_kernel': 3,
 }
@@ -134,5 +135,19 @@ PERFORMANCE_CONFIG = {
     'profile_stages': True,
     'save_outputs': False,
     'output_dir': './outputs',
+}
+
+# ==================== DEBUG SETTINGS ====================
+DEBUG_CONFIG = {
+    'enabled': True,                    # Master debug switch
+    'print_every_n_frames': 1,          # Print debug info every N frames
+    'show_gabor_stats': True,           # Gabor filter response statistics
+    'show_spike_stats': True,           # Spike encoding statistics
+    'show_v1_layer_stats': True,        # V1 layer firing rate statistics
+    'show_decoder_stats': True,         # Decoder output statistics
+    'show_array_shapes': True,          # Show shapes of all arrays
+    'show_distributions': True,         # Show min/max/mean/std of arrays
+    'check_for_nans': True,             # Check for NaN values
+    'check_for_zeros': True,            # Check if arrays are all zeros
 }
 

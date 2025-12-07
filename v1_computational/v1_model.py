@@ -94,8 +94,12 @@ class ComputationalV1Model:
         self.current_time = 0.0
         
         # Warmup period (spontaneous activity)
-        if warmup:
+        # Only print on first run to avoid console spam
+        if warmup and not hasattr(self, '_warmup_done'):
             print(f"⏱️  Warmup: {self.warmup_time} ms...")
+            self._warmup_done = True
+        
+        if warmup:
             while self.current_time < self.warmup_time:
                 for column in self.columns.values():
                     column.update(self.current_time)
@@ -105,7 +109,6 @@ class ComputationalV1Model:
         self.inject_spike_trains(spike_trains_by_orientation)
         
         # Stimulus period
-        print(f"⚡ Stimulus: {self.stimulus_time} ms...")
         self.stimulus_start_time = self.current_time
         stimulus_end_time = self.current_time + self.stimulus_time
         
@@ -125,7 +128,6 @@ class ComputationalV1Model:
         
         # Collect results
         results = self.get_results()
-        print("✅ Stimulus complete!")
         
         return results
     

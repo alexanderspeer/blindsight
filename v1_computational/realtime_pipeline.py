@@ -32,7 +32,7 @@ rpicam-vid \
 import cv2
 import sys
 from pipeline import V1VisionPipeline
-from config import VIDEO_CONFIG, GRID_CONFIG, V1_ARCHITECTURE
+from config import VIDEO_CONFIG, GRID_CONFIG, V1_ARCHITECTURE, DEBUG_CONFIG
 
 
 def main():
@@ -56,6 +56,21 @@ def main():
     print(f"   Grid: {GRID_CONFIG['grid_rows']}x{GRID_CONFIG['grid_cols']} = {GRID_CONFIG['n_neurons']} neurons")
     print(f"   Time step: {V1_ARCHITECTURE['dt']} ms")
     print(f"   Simulation: {V1_ARCHITECTURE['warmup_time_ms']}ms warmup + {V1_ARCHITECTURE['stimulus_time_ms']}ms stimulus")
+    
+    # Show debug configuration
+    if DEBUG_CONFIG['enabled']:
+        print(f"\n🐛 DEBUG MODE ENABLED:")
+        print(f"   Printing debug info every {DEBUG_CONFIG['print_every_n_frames']} frame(s)")
+        print(f"   Gabor stats: {DEBUG_CONFIG['show_gabor_stats']}")
+        print(f"   Spike stats: {DEBUG_CONFIG['show_spike_stats']}")
+        print(f"   V1 layer stats: {DEBUG_CONFIG['show_v1_layer_stats']}")
+        print(f"   Decoder stats: {DEBUG_CONFIG['show_decoder_stats']}")
+        print(f"   Array shapes: {DEBUG_CONFIG['show_array_shapes']}")
+        print(f"   Distributions: {DEBUG_CONFIG['show_distributions']}")
+        print(f"   Check NaNs: {DEBUG_CONFIG['check_for_nans']}")
+        print(f"   Check zeros: {DEBUG_CONFIG['check_for_zeros']}")
+    else:
+        print(f"\n   Debug mode: OFF")
     
     # Initialize pipeline
     pipeline = V1VisionPipeline()
