@@ -1,0 +1,4 @@
+---
+alwaysApply: true
+---
+Never create summary .md files unless explicitly asked to do so

@@ -5,7 +5,7 @@ Combines 4 orientation columns (0°, 45°, 90°, 135°) exactly like MDPI2021
 
 import numpy as np
 from v1_column import V1OrientationColumn
-from config import V1_ARCHITECTURE, GABOR_CONFIG
+from config import V1_ARCHITECTURE, GABOR_CONFIG, GRID_CONFIG
 
 
 class ComputationalV1Model:
@@ -56,8 +56,8 @@ class ComputationalV1Model:
         
         print(f"\n📈 Total neurons: {total_neurons}")
         print(f"   Per column: {total_neurons // 4}")
-        print(f"   Layer 4 SS (input): 324 neurons/column")
-        print(f"   Layer 2/3 (output): 324 neurons/column")
+        print(f"   Layer 4 SS (input): {GRID_CONFIG['n_neurons']} neurons/column")
+        print(f"   Layer 2/3 (output): {GRID_CONFIG['n_neurons']} neurons/column")
     
     def inject_spike_trains(self, spike_trains_by_orientation):
         """
@@ -253,14 +253,15 @@ class ComputationalV1Model:
             layer: Which layer to use ('layer_23' by default)
             
         Returns:
-            2D array (18x18) with preferred orientation at each position
+            2D array (NxN) with preferred orientation at each position
         """
-        grid_size = 18  # 18x18 grid
+        grid_size = GRID_CONFIG['grid_rows']  # Use config grid size
+        n_neurons = GRID_CONFIG['n_neurons']
         orientation_map = np.zeros((grid_size, grid_size))
         response_strength_map = np.zeros((grid_size, grid_size))
         
         # For each position in the grid
-        for neuron_idx in range(324):  # 324 = 18*18
+        for neuron_idx in range(n_neurons):
             row = neuron_idx // grid_size
             col = neuron_idx % grid_size
             

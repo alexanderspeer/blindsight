@@ -5,7 +5,7 @@ Computational implementation replicating the MDPI2021 V1 column structure
 
 import numpy as np
 from neurons import NeuronPopulation, LIFNeuron
-from config import V1_ARCHITECTURE
+from config import V1_ARCHITECTURE, GRID_CONFIG
 
 
 class V1OrientationColumn:
@@ -42,9 +42,10 @@ class V1OrientationColumn:
         
         print(f"  Creating {preferred_orientation}° column layers...")
         
-        # Layer 4: Spiny Stellate cells (324 neurons - main input layer)
+        # Layer 4: Spiny Stellate cells (n_neurons from config - main input layer)
+        n_grid_neurons = GRID_CONFIG['n_neurons']
         self.layer_4_ss = NeuronPopulation(
-            V1_ARCHITECTURE['layer_4_ss'],
+            n_grid_neurons,
             neuron_params,
             poisson_rate=V1_ARCHITECTURE['poisson_rate_l23'],  # Uses same as L23
             poisson_weight=V1_ARCHITECTURE['poisson_weight'],
@@ -60,9 +61,9 @@ class V1OrientationColumn:
             dt=dt
         )
         
-        # Layer 2/3: Pyramidal cells (324 neurons - primary output)
+        # Layer 2/3: Pyramidal cells (n_neurons from config - primary output)
         self.layer_23_pyr = NeuronPopulation(
-            V1_ARCHITECTURE['layer_23_pyr'],
+            n_grid_neurons,
             neuron_params,
             poisson_rate=V1_ARCHITECTURE['poisson_rate_l23'],
             poisson_weight=V1_ARCHITECTURE['poisson_weight'],
@@ -215,8 +216,9 @@ class V1OrientationColumn:
         
         # Layer 4 SS -> Layer 2/3 Pyramidal (groups of 4 SS -> 4 Pyr)
         # This implements the polychrony detection from MDPI2021
-        for i in range(0, 324, 4):
-            if i + 3 < 324:
+        n_grid_neurons = GRID_CONFIG['n_neurons']
+        for i in range(0, n_grid_neurons, 4):
+            if i + 3 < n_grid_neurons:
                 # Each group of 4 SS cells connects to corresponding 4 Pyr cells
                 for ss_idx in range(4):
                     for pyr_idx in range(4):

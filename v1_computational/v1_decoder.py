@@ -117,8 +117,8 @@ class V1Decoder:
         Create color-coded orientation map visualization
         
         Args:
-            orientation_map: 18x18 preferred orientation map
-            strength_map: 18x18 response strength map
+            orientation_map: NxN preferred orientation map (N=grid_rows)
+            strength_map: NxN response strength map
             
         Returns:
             Color visualization image
@@ -146,8 +146,9 @@ class V1Decoder:
         # Upscale for visibility
         vis_large = cv2.resize(vis, (360, 360), interpolation=cv2.INTER_NEAREST)
         
-        # Add grid lines
-        for i in range(0, 360, 20):
+        # Add grid lines (spacing based on grid size)
+        grid_spacing = 360 // self.grid_rows
+        for i in range(0, 360, grid_spacing):
             cv2.line(vis_large, (i, 0), (i, 360), (128, 128, 128), 1)
             cv2.line(vis_large, (0, i), (360, i), (128, 128, 128), 1)
         
@@ -167,8 +168,8 @@ class V1Decoder:
         Visualize as oriented edge map (line segments)
         
         Args:
-            orientation_map: 18x18 preferred orientation map
-            strength_map: 18x18 response strength map
+            orientation_map: NxN preferred orientation map (N=grid_rows)
+            strength_map: NxN response strength map
             
         Returns:
             Edge visualization image
@@ -179,9 +180,9 @@ class V1Decoder:
         # Normalize strength
         strength_norm = strength_map / (strength_map.max() + 1e-6)
         
-        # Draw oriented line segments
-        cell_size = 20
-        line_length = 15
+        # Draw oriented line segments (cell size adapts to grid)
+        cell_size = 360 // self.grid_rows
+        line_length = cell_size - 5  # Leave some margin
         
         for row in range(self.grid_rows):
             for col in range(self.grid_cols):
@@ -238,12 +239,16 @@ class V1Decoder:
             
             avg_response = np.mean(all_responses, axis=0)
             
-            # Reshape to grid
+            # Reshape to grid (handle variable sizes)
+            n_neurons = len(avg_response)
             if layer_name == 'layer_4' or layer_name == 'layer_23':
-                response_grid = avg_response.reshape(18, 18)
+                grid_size = int(np.sqrt(n_neurons))
+                response_grid = avg_response.reshape(grid_size, grid_size)
             elif layer_name == 'layer_5':
+                # Layer 5 has 81 neurons (9x9)
                 response_grid = avg_response.reshape(9, 9)
             elif layer_name == 'layer_6':
+                # Layer 6 has 243 neurons (9x27)
                 response_grid = avg_response.reshape(9, 27)
             
             # Normalize and visualize

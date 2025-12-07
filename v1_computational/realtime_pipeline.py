@@ -2,11 +2,37 @@
 Real-time V1 Vision Pipeline
 Processes video stream from Raspberry Pi camera in real-time
 """
-
+'''
+rpicam-vid \
+    --codec h264 \
+    --profile baseline \
+    --level 4.2 \
+    --width 320 \
+    --height 240 \
+    --framerate 15 \
+    --bitrate 1500000 \
+    --intra 15 \
+    --inline \
+    --low-latency \
+    --libav-video-codec-opts "tune=zerolatency;preset=ultrafast" \
+    --sharpness 1.2 \
+    --contrast 1.1 \
+    --denoise off \
+    --exposure sport \
+    --shutter 8000 \
+    --awb custom \
+    --awbgains 1.0,1.0 \
+    --timeout 0 \
+    --buffer-count 2 \
+    --flush \
+    -n \
+    --listen \
+    -o tcp://0.0.0.0:5001
+'''
 import cv2
 import sys
 from pipeline import V1VisionPipeline
-from config import VIDEO_CONFIG
+from config import VIDEO_CONFIG, GRID_CONFIG, V1_ARCHITECTURE
 
 
 def main():
@@ -25,6 +51,11 @@ def main():
         print(f"   IP: {VIDEO_CONFIG['pi_ip']}")
         print(f"   Port: {VIDEO_CONFIG['port']}")
         print(f"   Resolution: {VIDEO_CONFIG['width']}x{VIDEO_CONFIG['height']}")
+    
+    print(f"\n⚡ OPTIMIZATIONS ENABLED:")
+    print(f"   Grid: {GRID_CONFIG['grid_rows']}x{GRID_CONFIG['grid_cols']} = {GRID_CONFIG['n_neurons']} neurons")
+    print(f"   Time step: {V1_ARCHITECTURE['dt']} ms")
+    print(f"   Simulation: {V1_ARCHITECTURE['warmup_time_ms']}ms warmup + {V1_ARCHITECTURE['stimulus_time_ms']}ms stimulus")
     
     # Initialize pipeline
     pipeline = V1VisionPipeline()
