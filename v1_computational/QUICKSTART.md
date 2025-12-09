@@ -33,10 +33,10 @@ python test_static_image.py
 ```
 
 You'll see:
-- ✅ V1 model initialization (~5 seconds)
-- ✅ Image processing through pipeline (~0.3 seconds)
-- ✅ 4 visualization windows with results
-- ✅ Performance metrics and timing
+- V1 model initialization (~5 seconds)
+- Image processing through pipeline (~0.3 seconds)
+- 4 visualization windows with results
+- Performance metrics and timing
 
 Press any key to close.
 
@@ -113,10 +113,10 @@ SPIKE_CONFIG = {
 
 ## Next Steps
 
-1. ✅ Test works? → Try real-time video
-2. ✅ Want faster? → Reduce `stimulus_time_ms`
-3. ✅ Understand architecture? → Read `README.md`
-4. ✅ Modify behavior? → Edit `config.py`
+1. Test works? → Try real-time video
+2. Want faster? → Reduce `stimulus_time_ms`
+3. Understand architecture? → Read `README.md`
+4. Modify behavior? → Edit `config.py`
 
 ## Troubleshooting
 
@@ -137,10 +137,10 @@ pip install numpy opencv-python
 ## What's Next?
 
 This computational V1 is:
-- ✅ **Fast**: No NEST compilation, runs immediately
-- ✅ **Complete**: Same architecture as MDPI2021
-- ✅ **Portable**: Works on any system with Python
-- ✅ **Functional**: Real orientation selectivity
+- **Fast**: No NEST compilation, runs immediately
+- **Complete**: Same architecture as MDPI2021
+- **Portable**: Works on any system with Python
+- **Functional**: Real orientation selectivity
 
 The output is an **orientation/edge map** - exactly what V1 extracts from visual input!
 

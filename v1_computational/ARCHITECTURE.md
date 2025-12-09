@@ -208,16 +208,16 @@ From Layer 2/3 firing rates:
 
 | Feature | MDPI2021 (NEST) | Computational |
 |---------|----------------|---------------|
-| **Neurons per column** | 1,167 | 1,167 ✓ |
-| **Layer 4 SS** | 324 | 324 ✓ |
-| **Layer 2/3 Pyr** | 324 | 324 ✓ |
-| **Layer 5 Pyr** | 81 | 81 ✓ |
-| **Layer 6 Pyr** | 243 | 243 ✓ |
-| **Recurrent indegree L2/3** | 36 | 36 ✓ |
-| **LGN weight** | 15,000 | 15,000 ✓ |
-| **Poisson rates** | Matched | Matched ✓ |
+| **Neurons per column** | 1,167 | 1,167 |
+| **Layer 4 SS** | 324 | 324 |
+| **Layer 2/3 Pyr** | 324 | 324 |
+| **Layer 5 Pyr** | 81 | 81 |
+| **Layer 6 Pyr** | 243 | 243 |
+| **Recurrent indegree L2/3** | 36 | 36 |
+| **LGN weight** | 15,000 | 15,000 |
+| **Poisson rates** | Matched | Matched |
 | **Simulation engine** | NEST | NumPy |
-| **Time step** | 0.1 ms | 0.1 ms ✓ |
+| **Time step** | 0.1 ms | 0.1 ms |
 | **Neuron model** | lifl_psc_exp_ie | LIF (simplified) |
 
 ## Performance
@@ -237,20 +237,20 @@ Wall-clock time: ~50 seconds per frame on typical CPU
 ## Biological Realism
 
 **What's realistic:**
-- ✅ Layer structure (4, 2/3, 5, 6)
-- ✅ Neuron counts (scaled from real V1)
-- ✅ Connectivity patterns
-- ✅ Orientation selectivity
-- ✅ Retinotopic organization
-- ✅ Spike-based processing
-- ✅ Background activity
+- Layer structure (4, 2/3, 5, 6)
+- Neuron counts (scaled from real V1)
+- Connectivity patterns
+- Orientation selectivity
+- Retinotopic organization
+- Spike-based processing
+- Background activity
 
 **What's simplified:**
-- ⚠️ Neuron model (LIF vs detailed biophysics)
-- ⚠️ No between-column connections
-- ⚠️ No feedback from higher areas
-- ⚠️ No temporal dynamics beyond single frame
-- ⚠️ Simplified synaptic dynamics
+- NOTE: Neuron model (LIF vs detailed biophysics)
+- NOTE: No between-column connections
+- NOTE: No feedback from higher areas
+- NOTE: No temporal dynamics beyond single frame
+- NOTE: Simplified synaptic dynamics
 
 ## Extensions
 

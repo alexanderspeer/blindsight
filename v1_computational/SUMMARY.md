@@ -1,13 +1,13 @@
-# ✅ Computational V1 Model - COMPLETE
+# Computational V1 Model - COMPLETE
 
 ## What Was Created
 
 A **fast, functional computational V1 model** that:
-- ✅ Replicates the exact MDPI2021 V1 architecture
-- ✅ Same neurons, same layers, same connectivity
-- ✅ Processes video → spike trains → V1 → orientation maps
-- ✅ **Works immediately** (no NEST compilation)
-- ✅ **Complete pipeline** from camera to reconstruction
+- Replicates the exact MDPI2021 V1 architecture
+- Same neurons, same layers, same connectivity
+- Processes video → spike trains → V1 → orientation maps
+- **Works immediately** (no NEST compilation)
+- **Complete pipeline** from camera to reconstruction
 
 ## File Structure
 
@@ -100,10 +100,10 @@ python test_static_image.py
 ```
 
 **Expected output:**
-- 🧠 Model initialization (~5s)
-- ⚙️ Processing (~50s for full simulation)
-- 📊 V1 activity statistics
-- 🎨 4 visualization windows
+- Model initialization (~5s)
+- Processing (~50s for full simulation)
+- V1 activity statistics
+- 4 visualization windows
 
 ### 3. Run on Video
 ```bash
@@ -175,19 +175,19 @@ This gives ~2x speedup with minimal quality loss.
 | **Setup** | Compile C++ module | `pip install` |
 | **Time** | Hours of debugging | Works immediately |
 | **Dependencies** | NEST, CMake, OpenMP | NumPy, OpenCV |
-| **Architecture** | Same ✓ | Same ✓ |
+| **Architecture** | Same | Same |
 | **Neurons** | Full biophysics | Simplified LIF |
 | **Output** | Orientation maps | Orientation maps |
 | **Speed** | Slow | ~50s per frame |
 
 ## What This Achieves
 
-✅ **Exact V1 structure**: Same as MDPI2021
-✅ **Real neuron dynamics**: LIF with synaptic currents
-✅ **Biological realism**: Layers, connectivity, background activity
-✅ **Orientation selectivity**: Detected edges by orientation
-✅ **Retinotopic mapping**: 18×18 spatial grid
-✅ **Functional output**: Orientation/edge maps (not pixel reconstruction)
+**Exact V1 structure**: Same as MDPI2021
+**Real neuron dynamics**: LIF with synaptic currents
+**Biological realism**: Layers, connectivity, background activity
+**Orientation selectivity**: Detected edges by orientation
+**Retinotopic mapping**: 18×18 spatial grid
+**Functional output**: Orientation/edge maps (not pixel reconstruction)
 
 ## Output Interpretation
 
@@ -210,28 +210,28 @@ All settings in `config.py`:
 ## Validation
 
 Matches MDPI2021:
-- ✅ Layer 4 SS: 324 neurons
-- ✅ Layer 2/3 Pyr: 324 neurons
-- ✅ Recurrent indegree: 36
-- ✅ LGN→L4 weight: 15,000
-- ✅ Poisson background: 1.7 MHz
-- ✅ Orientation columns: 0°, 45°, 90°, 135°
+- Layer 4 SS: 324 neurons
+- Layer 2/3 Pyr: 324 neurons
+- Recurrent indegree: 36
+- LGN→L4 weight: 15,000
+- Poisson background: 1.7 MHz
+- Orientation columns: 0°, 45°, 90°, 135°
 
 ## Success Metrics
 
 When you run the test, you should see:
-- ✅ 4,668 neurons created
-- ✅ V1 activity: ~250 Hz in Layer 2/3
-- ✅ Orientation map with colored line segments
-- ✅ Raster plots with spike patterns
-- ✅ Layer activity heatmaps
+- 4,668 neurons created
+- V1 activity: ~250 Hz in Layer 2/3
+- Orientation map with colored line segments
+- Raster plots with spike patterns
+- Layer activity heatmaps
 
 ## Next Steps
 
-1. ✅ **Test works?** → Try video: `python realtime_pipeline.py video.mp4`
-2. ✅ **Too slow?** → Reduce `stimulus_time_ms` in `config.py`
-3. ✅ **Want details?** → Read `ARCHITECTURE.md`
-4. ✅ **Customize?** → Edit `config.py`
+1. **Test works?** → Try video: `python realtime_pipeline.py video.mp4`
+2. **Too slow?** → Reduce `stimulus_time_ms` in `config.py`
+3. **Want details?** → Read `ARCHITECTURE.md`
+4. **Customize?** → Edit `config.py`
 
 ## Troubleshooting
 
@@ -257,7 +257,7 @@ pip install opencv-python numpy
 
 ---
 
-## 🎉 You're Done!
+## You're Done!
 
 You now have a **fully functional computational V1 model** that:
 - Works out of the box
@@ -269,5 +269,5 @@ You now have a **fully functional computational V1 model** that:
 
 **Questions?** All documentation is in this folder.
 
-Enjoy your computational V1! 🧠✨
+Enjoy your computational V1!
 

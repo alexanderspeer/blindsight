@@ -4,7 +4,7 @@
 
 This is a computational reimplementation of the MDPI2021 V1 cortex model that runs without NEST. It maintains the exact same architecture, neuron counts, connectivity patterns, and layer structure as the biological model, but uses fast computational neurons for real-time performance.
 
-## 🧠 Architecture
+## Architecture
 
 ### Exact V1 Replication
 
@@ -34,7 +34,7 @@ V1 Model (4 orientation columns, 8 layers each)
 Orientation Map Reconstruction (detected edges/orientations)
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Installation
 
@@ -67,7 +67,7 @@ python realtime_pipeline.py
 python realtime_pipeline.py path/to/video.mp4
 ```
 
-## 📊 What You'll See
+## What You'll See
 
 ### Visualization Windows
 
@@ -85,7 +85,7 @@ The reconstructed image is an **orientation/edge map** showing:
 
 **This is NOT a photographic reconstruction** - it's what V1 "sees": edges, orientations, and spatial structure.
 
-## 🔬 Technical Details
+## Technical Details
 
 ### Neuron Model
 
@@ -118,7 +118,7 @@ Poisson noise at realistic rates:
 - Layer 6: 1.70 MHz
 - Inhibitory: 1.75 MHz
 
-## 📁 File Structure
+## File Structure
 
 ```
 v1_computational/
@@ -135,7 +135,7 @@ v1_computational/
 └── requirements.txt      # Python dependencies
 ```
 
-## ⚙️ Configuration
+## Configuration
 
 Edit `config.py` to modify:
 - Video source settings
@@ -144,7 +144,7 @@ Edit `config.py` to modify:
 - V1 architecture (neuron counts, connections)
 - Visualization options
 
-## 🎯 Performance
+## Performance
 
 **Typical timing per frame:**
 - Preprocessing: ~1-2 ms
@@ -160,7 +160,7 @@ For faster performance:
 - Skip `warmup_time_ms` for continuous video
 - Reduce grid size (18x18 → smaller)
 
-## 🔍 Understanding the Output
+## Understanding the Output
 
 ### Orientation Map
 
@@ -185,15 +185,15 @@ Heatmaps showing firing rates:
 - **Layer 5**: Intermediate processing
 - **Layer 6**: Deep layer processing
 
-## 🧪 Validation
+## Validation
 
 This model matches the MDPI2021 architecture:
-- ✅ Same neuron counts per layer
-- ✅ Same connectivity patterns
-- ✅ Same synaptic weights
-- ✅ Same background activity
-- ✅ Same orientation selectivity
-- ✅ Same retinotopic organization
+- Same neuron counts per layer
+- Same connectivity patterns
+- Same synaptic weights
+- Same background activity
+- Same orientation selectivity
+- Same retinotopic organization
 
 ## 🚧 Differences from NEST Version
 
@@ -207,7 +207,7 @@ This model matches the MDPI2021 architecture:
 | **Compatibility** | NEST 3.x required | Works anywhere |
 | **Output** | Same orientation maps | Same orientation maps |
 
-## 📚 References
+## References
 
 Based on:
 - MDPI2021 V1 orientation column model
@@ -215,7 +215,7 @@ Based on:
 - `Simulation_V1_pinwheel_MEGcomparison.py` connectivity
 - Latency coding from LGN spike data
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 **No display windows?**
 - Check OpenCV installation: `pip install opencv-python`
@@ -228,7 +228,7 @@ Based on:
 - Verify IP address in `config.py`
 - Ensure Pi is streaming: `ffmpeg -i tcp://...`
 
-## 📄 License
+## License
 
 Same as parent MDPI2021 repository.
 

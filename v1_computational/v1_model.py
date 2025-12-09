@@ -14,22 +14,24 @@ class ComputationalV1Model:
     Replicates Simulation_V1_pinwheel_MEGcomparison.py
     """
     
-    def __init__(self, dt=0.1):
+    def __init__(self, dt=0.1, debug_synaptic_currents=False):
         """
         Args:
             dt: Time step (ms)
+            debug_synaptic_currents: If True, print synaptic currents during simulation
         """
         self.dt = dt
+        self.debug_synaptic_currents = debug_synaptic_currents
         self.orientations = GABOR_CONFIG['orientations']  # [0, 45, 90, 135]
         
-        print("🧠 Creating Computational V1 Model...")
+        print("Creating Computational V1 Model...")
         print(f"   4 orientation columns: {self.orientations}°")
         print(f"   Time step: {dt} ms")
         
         # Create orientation columns
         self.columns = {}
         for orientation in self.orientations:
-            print(f"\n📊 Building {orientation}° column...")
+            print(f"\nBuilding {orientation}° column...")
             self.columns[orientation] = V1OrientationColumn(orientation, dt)
         
         # Simulation state
@@ -41,8 +43,12 @@ class ComputationalV1Model:
         self.stimulus_active = False
         self.stimulus_start_time = 0.0
         
-        print("\n✅ V1 Model created successfully!")
+        print("\nV1 Model created successfully!")
         self._print_stats()
+        
+        # Print weight configuration
+        if debug_synaptic_currents:
+            self.print_layer_diagnostics()
     
     def _print_stats(self):
         """Print model statistics"""
@@ -54,7 +60,7 @@ class ComputationalV1Model:
                  V1_ARCHITECTURE['layer_6_pyr'] + V1_ARCHITECTURE['layer_6_inh'])
             total_neurons += n
         
-        print(f"\n📈 Total neurons: {total_neurons}")
+        print(f"\nTotal neurons: {total_neurons}")
         print(f"   Per column: {total_neurons // 4}")
         print(f"   Layer 4 SS (input): {GRID_CONFIG['n_neurons']} neurons/column")
         print(f"   Layer 2/3 (output): {GRID_CONFIG['n_neurons']} neurons/column")
@@ -90,43 +96,53 @@ class ComputationalV1Model:
         Returns:
             Dict with simulation results
         """
-        # Reset time
+        if not hasattr(self, '_startup_report_printed'):
+            print("\n=== FINAL PARAMETER CHECK ===")
+            print("Weights:")
+            print(f"  LGN→L4:   {V1_ARCHITECTURE['lgn_to_ss4_weight']}")
+            print(f"  L4→L2/3:  {V1_ARCHITECTURE['weight_L4_to_L23']}")
+            print(f"  L2/3→L5:  {V1_ARCHITECTURE['weight_L23_to_L5']}")
+            print(f"  L5→L6:    {V1_ARCHITECTURE['weight_L5_to_L6']}")
+            print("\nThresholds & L2/3 Parameters:")
+            print(f"  Default v_threshold: {V1_ARCHITECTURE['v_threshold']} mV")
+            print(f"  L2/3 v_threshold:    {V1_ARCHITECTURE['L23_v_threshold']} mV")
+            print(f"  L2/3 tau_m:          {V1_ARCHITECTURE['L23_tau_membrane']} ms")
+            print(f"  L2/3 bias_current:   {V1_ARCHITECTURE['L23_bias_current']} pA")
+            print("\n")
+            self._startup_report_printed = True
+        
         self.current_time = 0.0
         
-        # Warmup period (spontaneous activity)
-        # Only print on first run to avoid console spam
         if warmup and not hasattr(self, '_warmup_done'):
-            print(f"⏱️  Warmup: {self.warmup_time} ms...")
+            print(f"Warmup: {self.warmup_time} ms...")
             self._warmup_done = True
         
         if warmup:
             while self.current_time < self.warmup_time:
                 for column in self.columns.values():
-                    column.update(self.current_time)
+                    column.update(self.current_time, debug_print=False)
                 self.current_time += self.dt
         
-        # Inject spike trains
         self.inject_spike_trains(spike_trains_by_orientation)
         
-        # Stimulus period
         self.stimulus_start_time = self.current_time
         stimulus_end_time = self.current_time + self.stimulus_time
         
+        if self.debug_synaptic_currents:
+            print("\nSYNAPTIC CURRENTS DURING STIMULUS:")
+        
         while self.current_time < stimulus_end_time:
-            # Get spike trains for this time point
             current_spikes = self._get_current_spikes(
                 spike_trains_by_orientation,
                 self.current_time
             )
             
-            # Update all columns
             for orientation, column in self.columns.items():
                 lgn_input = current_spikes.get(orientation, None)
-                column.update(self.current_time, lgn_input)
+                column.update(self.current_time, lgn_input, debug_print=self.debug_synaptic_currents)
             
             self.current_time += self.dt
         
-        # Collect results
         results = self.get_results()
         
         return results
@@ -164,7 +180,6 @@ class ComputationalV1Model:
         Returns:
             Dict with firing rates and spikes for each orientation and layer
         """
-        # Time window for analysis (during stimulus presentation)
         analysis_window = (
             self.stimulus_start_time,
             self.stimulus_start_time + self.stimulus_time
@@ -284,6 +299,49 @@ class ComputationalV1Model:
             'orientation_map': orientation_map,
             'response_strength': response_strength_map
         }
+    
+    def get_synaptic_diagnostics(self, layer_name='layer_23'):
+        """
+        Get synaptic current diagnostics for a specific layer across all columns
+        
+        Args:
+            layer_name: 'layer_23', 'layer_5', or 'layer_6'
+            
+        Returns:
+            Dict with diagnostics per orientation
+        """
+        diagnostics = {}
+        
+        for orientation, column in self.columns.items():
+            stats = column.get_synaptic_current_stats(layer_name)
+            diagnostics[orientation] = stats
+        
+        return diagnostics
+    
+    def print_layer_diagnostics(self):
+        """Print comprehensive diagnostics about layer activation"""
+        print("\n")
+        print("V1 LAYER CONNECTIVITY DIAGNOSTICS")
+        
+        print("\nCONNECTION WEIGHTS:")
+        print(f"  LGN → L4:    {V1_ARCHITECTURE['lgn_to_ss4_weight']:.1f}")
+        print(f"  L4 → L2/3:   {V1_ARCHITECTURE['weight_L4_to_L23']:.1f}")
+        print(f"  L2/3 → L5:   {V1_ARCHITECTURE['weight_L23_to_L5']:.1f}")
+        print(f"  L5 → L6:     {V1_ARCHITECTURE['weight_L5_to_L6']:.1f}")
+        
+        print("\nLAYER 2/3 NEURON PARAMETERS:")
+        print(f"  Threshold:   {V1_ARCHITECTURE['L23_v_threshold']:.1f} mV")
+        print(f"  Tau_m:       {V1_ARCHITECTURE['L23_tau_membrane']:.1f} ms")
+        print(f"  Bias current: {V1_ARCHITECTURE['L23_bias_current']:.1f} pA")
+        
+        print("\nLAYER 2/3 SYNAPTIC CURRENTS (by orientation):")
+        l23_diag = self.get_synaptic_diagnostics('layer_23')
+        for orientation in sorted(l23_diag.keys()):
+            stats = l23_diag[orientation]
+            print(f"  {orientation:3d}°: Exc={stats['exc_current_mean']:.2f} pA (max={stats['exc_current_max']:.2f}), "
+                  f"Nonzero={stats['exc_current_nonzero']}/{stats['neurons_total']}, "
+                  f"V_m={stats['voltage_mean']:.2f} mV, Near_thresh={stats['neurons_near_threshold']}")
+        
     
     def reset(self):
         """Reset all columns"""

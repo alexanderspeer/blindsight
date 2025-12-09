@@ -20,32 +20,28 @@ class V1VisionPipeline:
     
     def __init__(self):
         """Initialize all pipeline components"""
-        print("🚀 Initializing V1 Vision Pipeline...")
-        print("=" * 60)
+        print("Initializing V1 Vision Pipeline...")
         
-        # Debug settings
         self.debug_enabled = DEBUG_CONFIG['enabled']
         self.debug_interval = DEBUG_CONFIG['print_every_n_frames']
         
-        # Create components
         self.gabor_extractor = GaborFeatureExtractor()
         self.spike_encoder = SpikeEncoder()
-        self.v1_model = ComputationalV1Model(dt=PROCESSING_CONFIG.get('v1_dt', 0.5))
+        self.v1_model = ComputationalV1Model(
+            dt=PROCESSING_CONFIG.get('v1_dt', 0.5),
+            debug_synaptic_currents=DEBUG_CONFIG.get('show_synaptic_currents', False)
+        )
         self.decoder = V1Decoder()
         
-        # Performance tracking
         self.frame_count = 0
         self.start_time = None
         
-        # Visualization update tracking
         self.last_viz_update = 0
         self.viz_update_interval = VISUALIZATION_CONFIG.get('update_interval_seconds', 5.0)
         self.cached_visualization = None
         
-        print("\n" + "=" * 60)
-        print("✅ Pipeline ready!")
+        print("\nPipeline ready!")
         print(f"   Visualization updates: Every {self.viz_update_interval}s")
-        print("=" * 60)
     
     def process_frame(self, frame, warmup=False):
         """
@@ -62,11 +58,9 @@ class V1VisionPipeline:
         should_debug = self.debug_enabled and (self.frame_count % self.debug_interval == 0)
         
         if should_debug:
-            print("\n" + "="*80)
+            print("\n")
             print(f"DEBUG FRAME {self.frame_count}")
-            print("="*80)
         
-        # 1. Preprocess frame
         t1 = time.time()
         processed_frame = self._preprocess_frame(frame)
         t_preprocess = time.time() - t1
@@ -74,15 +68,18 @@ class V1VisionPipeline:
         if should_debug:
             self._debug_preprocessing(frame, processed_frame)
         
-        # 2. Extract Gabor features
         t1 = time.time()
-        features, gabor_responses = self.gabor_extractor.extract_features(processed_frame)
+        verbose = should_debug or (self.frame_count in [0, 10])
+        features, gabor_responses = self.gabor_extractor.extract_features(
+            processed_frame, 
+            apply_orientation_competition=True,
+            verbose=verbose
+        )
         t_gabor = time.time() - t1
         
         if should_debug:
             self._debug_gabor_features(features, gabor_responses)
         
-        # 3. Encode to spike trains
         t1 = time.time()
         spike_trains = self.spike_encoder.encode_features_to_spikes(features)
         t_encode = time.time() - t1
@@ -90,7 +87,6 @@ class V1VisionPipeline:
         if should_debug:
             self._debug_spike_trains(spike_trains)
         
-        # 4. Run V1 simulation
         t1 = time.time()
         v1_results = self.v1_model.run_stimulus(spike_trains, warmup=warmup)
         t_v1 = time.time() - t1
@@ -98,7 +94,6 @@ class V1VisionPipeline:
         if should_debug:
             self._debug_v1_results(v1_results)
         
-        # 5. Decode V1 output
         t1 = time.time()
         v1_output = self.decoder.decode_v1_output(v1_results, layer='layer_23')
         t_decode = time.time() - t1
@@ -120,11 +115,12 @@ class V1VisionPipeline:
             print(f"  V1 Sim:     {t_v1*1000:.2f} ms")
             print(f"  Decode:     {t_decode*1000:.2f} ms")
             print(f"  TOTAL:      {t_total*1000:.2f} ms ({1.0/t_total:.2f} FPS)")
-            print("="*80 + "\n")
+            print("\n")
         
-        # Special summary at frame 10
+        # summary at frame 10
         if self.frame_count == 10:
             self._print_frame_10_summary(v1_results, spike_trains)
+            self.v1_model.print_layer_diagnostics()
         
         return {
             'original_frame': frame,
@@ -154,7 +150,6 @@ class V1VisionPipeline:
         Returns:
             Preprocessed frame
         """
-        # Downsample if configured
         if PROCESSING_CONFIG['downsample_frame']:
             frame = cv2.resize(
                 frame,
@@ -162,12 +157,10 @@ class V1VisionPipeline:
                  PROCESSING_CONFIG['downsample_height'])
             )
         
-        # Apply Gaussian blur
         if PROCESSING_CONFIG['gaussian_blur_kernel'] > 0:
             kernel_size = PROCESSING_CONFIG['gaussian_blur_kernel']
             frame = cv2.GaussianBlur(frame, (kernel_size, kernel_size), 0)
         
-        # Normalize contrast
         if PROCESSING_CONFIG['normalize_contrast']:
             frame = cv2.normalize(frame, None, 0, 255, cv2.NORM_MINMAX)
         
@@ -184,39 +177,32 @@ class V1VisionPipeline:
         Returns:
             Dict with visualization images
         """
-        # Check if we should update visualizations
         current_time = time.time()
         if not force_update and self.cached_visualization is not None:
             if (current_time - self.last_viz_update) < self.viz_update_interval:
-                # Return cached visualization with updated timing only
                 cached = self.cached_visualization.copy()
                 if 'timing' in results:
                     cached['timing_text'] = self._create_timing_display(results['timing'])
                 return cached
         
-        # Time to update visualizations
         self.last_viz_update = current_time
         
         visualizations = {}
         
-        # 1. Raw video (always show for real-time feedback)
         if VISUALIZATION_CONFIG['display_raw']:
             visualizations['raw'] = results['original_frame'].copy()
         
-        # 2. Gabor features
         gabor_vis = self.gabor_extractor.visualize_features(
             results['gabor_features'],
             results['gabor_responses']
         )
         visualizations['gabor'] = gabor_vis
         
-        # 3. Grid responses
         grid_vis = self.gabor_extractor.visualize_grid_responses(
             results['gabor_features']
         )
         visualizations['grid'] = grid_vis
         
-        # 4. Spike trains
         if VISUALIZATION_CONFIG['display_spikes']:
             spike_vis = self.spike_encoder.visualize_spike_trains(
                 results['spike_trains'],
@@ -224,27 +210,22 @@ class V1VisionPipeline:
             )
             visualizations['spikes'] = spike_vis
         
-        # 5. V1 output (orientation map)
         if VISUALIZATION_CONFIG['display_v1_output']:
             visualizations['v1_color'] = results['v1_output']['visualization_color']
             visualizations['v1_edges'] = results['v1_output']['visualization_edges']
         
-        # 6. Layer activity
         layer_vis = self.decoder.visualize_layer_activity(results['v1_results'])
         visualizations['layers'] = layer_vis
         
-        # 7. Comparison view
         comparison = self.decoder.create_comparison_view(
             results['original_frame'],
             results['v1_output']
         )
         visualizations['comparison'] = comparison
         
-        # 8. Add timing info
         if 'timing' in results:
             visualizations['timing_text'] = self._create_timing_display(results['timing'])
         
-        # Cache for next frames
         self.cached_visualization = visualizations.copy()
         
         return visualizations
@@ -291,7 +272,6 @@ class V1VisionPipeline:
         # Prepare panels
         panels = {}
         
-        # Raw video
         if 'raw' in visualizations:
             raw = cv2.resize(visualizations['raw'], (panel_w, panel_h))
             raw = self._add_label(raw, "RAW VIDEO INPUT")
@@ -299,14 +279,12 @@ class V1VisionPipeline:
         else:
             panels['raw'] = np.zeros((panel_h, panel_w, 3), dtype=np.uint8)
         
-        # Comparison
         if 'comparison' in visualizations:
             comp = cv2.resize(visualizations['comparison'], (panel_w, panel_h))
             panels['comparison'] = comp
         else:
             panels['comparison'] = np.zeros((panel_h, panel_w, 3), dtype=np.uint8)
         
-        # V1 Color map
         if 'v1_color' in visualizations:
             v1c = cv2.resize(visualizations['v1_color'], (panel_w, panel_h))
             v1c = self._add_label(v1c, "V1 ORIENTATION MAP")
@@ -314,7 +292,6 @@ class V1VisionPipeline:
         else:
             panels['v1_color'] = np.zeros((panel_h, panel_w, 3), dtype=np.uint8)
         
-        # Gabor features
         if 'gabor' in visualizations:
             gabor = cv2.resize(visualizations['gabor'], (panel_w, panel_h))
             gabor = self._add_label(gabor, "GABOR FILTERS (0/45/90/135)")
@@ -322,7 +299,6 @@ class V1VisionPipeline:
         else:
             panels['gabor'] = np.zeros((panel_h, panel_w, 3), dtype=np.uint8)
         
-        # Spike trains
         if 'spikes' in visualizations:
             spikes = cv2.resize(visualizations['spikes'], (panel_w, panel_h))
             spikes = self._add_label(spikes, "SPIKE TRAINS (Latency Coded)")
@@ -330,7 +306,6 @@ class V1VisionPipeline:
         else:
             panels['spikes'] = np.zeros((panel_h, panel_w, 3), dtype=np.uint8)
         
-        # Layer activity
         if 'layers' in visualizations:
             layers = cv2.resize(visualizations['layers'], (panel_w, panel_h))
             layers = self._add_label(layers, "V1 LAYER ACTIVITY (4/2/3/5/6)")
@@ -338,18 +313,13 @@ class V1VisionPipeline:
         else:
             panels['layers'] = np.zeros((panel_h, panel_w, 3), dtype=np.uint8)
         
-        # Combine into rows
         row1 = np.hstack([panels['raw'], panels['comparison'], panels['v1_color']])
         row2 = np.hstack([panels['gabor'], panels['spikes'], panels['layers']])
-        
-        # Combine rows
         combined = np.vstack([row1, row2])
         
-        # Add timing overlay
         if 'timing_text' in visualizations:
             y_pos = 40
             for line in visualizations['timing_text'].split('\n'):
-                # Add black background for readability
                 text_size = cv2.getTextSize(line, cv2.FONT_HERSHEY_SIMPLEX, 0.8, 2)[0]
                 cv2.rectangle(combined, (8, y_pos - 28), (text_size[0] + 20, y_pos + 8), (0, 0, 0), -1)
                 cv2.putText(combined, line, (15, y_pos),
@@ -361,7 +331,6 @@ class V1VisionPipeline:
     def _add_label(self, image, label):
         """Add a label at the top of an image"""
         img = image.copy()
-        # Add black background for label (larger for bigger display)
         cv2.rectangle(img, (0, 0), (img.shape[1], 40), (0, 0, 0), -1)
         cv2.putText(img, label, (15, 28),
                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
@@ -375,23 +344,19 @@ class V1VisionPipeline:
             visualizations: Dict with visualization images
         """
         if VISUALIZATION_CONFIG.get('combined_display', True):
-            # Show combined panel in one window
             combined = self.create_combined_panel(visualizations)
             window_name = VISUALIZATION_CONFIG['window_names'].get('combined', 'V1 Vision Pipeline')
             
-            # Create window with option for fullscreen
             if not hasattr(self, '_window_created'):
                 cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
                 if VISUALIZATION_CONFIG.get('fullscreen', False):
                     cv2.setWindowProperty(window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
                 else:
-                    # Set explicit window size (1920x1080)
                     cv2.resizeWindow(window_name, 1920, 1080)
                 self._window_created = True
             
             cv2.imshow(window_name, combined)
         else:
-            # Original multi-window display
             window_positions = {
                 'comparison': (0, 0),
                 'gabor': (730, 0),
@@ -409,7 +374,6 @@ class V1VisionPipeline:
                         x, y = window_positions[name]
                         cv2.moveWindow(window_name, x, y)
             
-            # Add timing overlay to comparison window
             if 'timing_text' in visualizations and 'comparison' in visualizations:
                 timing_img = visualizations['comparison'].copy()
                 y_pos = 50
@@ -447,27 +411,23 @@ class V1VisionPipeline:
                 bufsize=VIDEO_CONFIG['width'] * VIDEO_CONFIG['height'] * 3
             )
             
-            print(f"🎥 Connecting to Pi stream at {VIDEO_CONFIG['pi_ip']}:{VIDEO_CONFIG['port']}...")
+            print(f"Connecting to Pi stream at {VIDEO_CONFIG['pi_ip']}:{VIDEO_CONFIG['port']}...")
             print(f"   Make sure Pi is running: rpicam-vid -o tcp://0.0.0.0:5001 --listen")
             
-            # Read frames
             frame_size = VIDEO_CONFIG['width'] * VIDEO_CONFIG['height'] * 3
             
             try:
                 while True:
                     raw_frame = process.stdout.read(frame_size)
                     if len(raw_frame) != frame_size:
-                        continue  # Skip incomplete frames
+                        continue
                     
                     frame = np.frombuffer(raw_frame, dtype=np.uint8).reshape(
                         (VIDEO_CONFIG['height'], VIDEO_CONFIG['width'], 3)
                     )
                     
-                    # Process frame (warmup on first few frames)
                     warmup = (self.frame_count < 3)
                     results = self.process_frame(frame, warmup=warmup)
-                    
-                    # Visualize
                     visualizations = self.visualize_pipeline(results)
                     self.display_visualizations(visualizations)
                     
@@ -479,7 +439,6 @@ class V1VisionPipeline:
                 cv2.destroyAllWindows()
         
         else:
-            # Run on video file
             cap = cv2.VideoCapture(video_source)
             
             try:
@@ -488,11 +447,8 @@ class V1VisionPipeline:
                     if not ret:
                         break
                     
-                    # Process frame (warmup on first few frames)
                     warmup = (self.frame_count < 3)
                     results = self.process_frame(frame, warmup=warmup)
-                    
-                    # Visualize
                     visualizations = self.visualize_pipeline(results)
                     self.display_visualizations(visualizations)
                     
@@ -514,7 +470,7 @@ class V1VisionPipeline:
         if not DEBUG_CONFIG['show_array_shapes']:
             return
         
-        print("\n[1] PREPROCESSING:")
+        print("\nPREPROCESSING:")
         print(f"  Input shape: {original.shape}")
         print(f"  Output shape: {processed.shape}")
         
@@ -531,7 +487,7 @@ class V1VisionPipeline:
         if not DEBUG_CONFIG['show_gabor_stats']:
             return
         
-        print("\n[2] GABOR FEATURE EXTRACTION:")
+        print("\nGABOR FEATURE EXTRACTION:")
         
         for orientation in sorted(features.keys()):
             feature_grid = features[orientation]
@@ -565,7 +521,7 @@ class V1VisionPipeline:
         if not DEBUG_CONFIG['show_spike_stats']:
             return
         
-        print("\n[3] SPIKE ENCODING:")
+        print("\nSPIKE ENCODING:")
         
         total_spikes = 0
         for orientation in sorted(spike_trains.keys()):
@@ -604,7 +560,7 @@ class V1VisionPipeline:
         if not DEBUG_CONFIG['show_v1_layer_stats']:
             return
         
-        print("\n[4] V1 SIMULATION:")
+        print("\nV1 SIMULATION:")
         
         for orientation in sorted(v1_results['orientations'].keys()):
             orient_data = v1_results['orientations'][orientation]
@@ -642,9 +598,8 @@ class V1VisionPipeline:
     
     def _print_frame_10_summary(self, v1_results, spike_trains):
         """Print comprehensive summary after frame 10"""
-        print("\n" + "="*80)
+        print("\n")
         print("FRAME 10 COMPREHENSIVE SUMMARY")
-        print("="*80)
         
         # Spike encoding summary
         print("\nSPIKE ENCODING SUMMARY:")
@@ -690,14 +645,14 @@ class V1VisionPipeline:
         print(f"  Feedforward weight: {V1_ARCHITECTURE['feedforward_weight']}")
         print(f"  Spike threshold: {SPIKE_CONFIG['threshold']}")
         
-        print("\n" + "="*80 + "\n")
+        print("\n")
     
     def _debug_decoder_output(self, v1_output):
         """Debug decoder output"""
         if not DEBUG_CONFIG['show_decoder_stats']:
             return
         
-        print("\n[5] DECODER OUTPUT:")
+        print("\nDECODER OUTPUT:")
         
         orientation_map = v1_output['orientation_map']
         strength_map = v1_output['strength_map']

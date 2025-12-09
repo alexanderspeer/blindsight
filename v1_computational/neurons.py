@@ -28,17 +28,13 @@ class LIFNeuron:
         self.refractory_period = refractory_period
         self.dt = dt
         
-        # State variables
-        self.v_m = v_rest + np.random.randn() * 2.0  # Add noise to initial voltage
-        self.i_syn_ex = 0.0  # Excitatory synaptic current
-        self.i_syn_in = 0.0  # Inhibitory synaptic current
+        self.v_m = v_rest + np.random.randn() * 2.0
+        self.i_syn_ex = 0.0
+        self.i_syn_in = 0.0
         self.refractory_counter = 0
         
-        # Spike history
         self.spike_times = []
         self.last_spike_time = -1000.0
-        
-        # Enhancement factor (for intrinsic excitability simulation)
         self.enhancement = 1.0
         
     def update(self, current_time, external_current=0.0, poisson_input=0.0):
@@ -55,19 +51,15 @@ class LIFNeuron:
         """
         spiked = False
         
-        # Refractory period
         if self.refractory_counter > 0:
             self.refractory_counter -= self.dt
             self.v_m = self.v_rest
-            
         else:
-            # Update membrane potential (Leaky integration)
             dv = (-(self.v_m - self.v_rest) + 
                   (self.i_syn_ex - self.i_syn_in + external_current + poisson_input) * self.enhancement) / self.tau_m
             
             self.v_m += dv * self.dt
             
-            # Check for spike
             if self.v_m >= self.v_threshold:
                 self.v_m = self.v_reset
                 self.refractory_counter = self.refractory_period
@@ -75,7 +67,6 @@ class LIFNeuron:
                 self.last_spike_time = current_time
                 spiked = True
         
-        # Decay synaptic currents
         self.i_syn_ex *= np.exp(-self.dt / self.tau_syn_ex)
         self.i_syn_in *= np.exp(-self.dt / self.tau_syn_in)
         
@@ -121,7 +112,6 @@ class PoissonNoise:
         self.weight = weight
         self.dt = dt
         
-        # Convert rate to probability per time step
         self.spike_prob = (rate_hz / 1000.0) * dt
     
     def sample(self):
@@ -142,7 +132,7 @@ class NeuronPopulation:
     Represents one layer or group in V1
     """
     
-    def __init__(self, n_neurons, neuron_params, poisson_rate=0, poisson_weight=0, dt=0.1):
+    def __init__(self, n_neurons, neuron_params, poisson_rate=0, poisson_weight=0, dt=0.1, bias_current=0.0):
         """
         Args:
             n_neurons: Number of neurons in population
@@ -150,11 +140,12 @@ class NeuronPopulation:
             poisson_rate: Background Poisson rate (Hz)
             poisson_weight: Weight of Poisson inputs
             dt: Time step (ms)
+            bias_current: Constant bias current (pA) applied to all neurons
         """
         self.n_neurons = n_neurons
         self.dt = dt
+        self.bias_current = bias_current
         
-        # Create neurons
         self.neurons = [
             LIFNeuron(
                 neuron_id=i,
@@ -170,15 +161,11 @@ class NeuronPopulation:
             for i in range(n_neurons)
         ]
         
-        # Poisson noise
         self.poisson = None
         if poisson_rate > 0:
             self.poisson = PoissonNoise(poisson_rate, poisson_weight, dt)
         
-        # Recurrent connections (sparse)
         self.recurrent_connections = {}
-        
-        # Spike buffer
         self.current_spikes = []
     
     def add_recurrent_connections(self, indegree, weight):
@@ -190,13 +177,11 @@ class NeuronPopulation:
             weight: Connection weight
         """
         for post_idx in range(self.n_neurons):
-            # Random presynaptic neurons
             pre_indices = np.random.choice(
                 self.n_neurons, 
                 size=min(indegree, self.n_neurons-1), 
                 replace=False
             )
-            # Remove self-connections
             pre_indices = pre_indices[pre_indices != post_idx]
             
             for pre_idx in pre_indices:
@@ -220,21 +205,16 @@ class NeuronPopulation:
         
         self.current_spikes = []
         
-        # Update each neuron
         for i, neuron in enumerate(self.neurons):
-            # External input
             ext_current = external_inputs.get(i, 0.0)
-            
-            # Poisson background
             poisson_current = self.poisson.sample() if self.poisson else 0.0
+            total_current = ext_current + poisson_current + self.bias_current
             
-            # Update neuron
-            spiked = neuron.update(current_time, ext_current, poisson_current)
+            spiked = neuron.update(current_time, total_current, 0.0)
             
             if spiked:
                 self.current_spikes.append(i)
         
-        # Propagate recurrent spikes
         for spike_idx in self.current_spikes:
             if spike_idx in self.recurrent_connections:
                 for post_idx, weight in self.recurrent_connections[spike_idx]:
