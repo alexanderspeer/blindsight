@@ -1,3 +1,5 @@
+# **git add v1_computational / git commit /  git subtree push --prefix=v1_computational school main - **
+
 # Computational V1 Vision Pipeline
 
 **Fast, functional computational implementation of primary visual cortex (V1) processing**
@@ -195,7 +197,7 @@ This model matches the MDPI2021 architecture:
 - Same orientation selectivity
 - Same retinotopic organization
 
-## 🚧 Differences from NEST Version
+## Differences from NEST Version
 
 | Feature | NEST Version | Computational Version |
 |---------|--------------|----------------------|
