@@ -2,15 +2,11 @@
 
 # Computational V1 Vision Pipeline
 
-**Fast, functional computational implementation of primary visual cortex (V1) processing**
-
-This is a computational reimplementation of the MDPI2021 V1 cortex model that runs without NEST. It maintains the exact same architecture, neuron counts, connectivity patterns, and layer structure as the biological model, but uses fast computational neurons for real-time performance.
-
 ## Architecture
 
 ### Exact V1 Replication
 
-The model replicates the MDPI2021 V1 structure:
+ replicates the MDPI2021 V1 structure:
 
 **4 Orientation Columns** (0°, 45°, 90°, 135°)
 
@@ -36,8 +32,6 @@ V1 Model (4 orientation columns, 8 layers each)
 Orientation Map Reconstruction (detected edges/orientations)
 ```
 
-## Quick Start
-
 ### Installation
 
 ```bash
@@ -50,8 +44,6 @@ pip install -r requirements.txt
 ```bash
 python test_static_image.py
 ```
-
-This will:
 1. Create a test image with oriented edges
 2. Process through the complete V1 pipeline
 3. Display all intermediate stages
@@ -85,41 +77,6 @@ The reconstructed image is an **orientation/edge map** showing:
 - Response strengths (brightness)
 - Spatial organization (18x18 grid matching input)
 
-**This is NOT a photographic reconstruction** - it's what V1 "sees": edges, orientations, and spatial structure.
-
-## Technical Details
-
-### Neuron Model
-
-- **Type**: Leaky Integrate-and-Fire (LIF)
-- **Dynamics**: Computational implementation matching `lifl_psc_exp_ie`
-- **Time step**: 0.1 ms
-- **Refractory period**: 2 ms
-
-### Connectivity
-
-From MDPI2021 model:
-- Layer 2/3 recurrent: indegree=36
-- Layer 4 → Layer 2/3: Polychrony detection (groups of 4)
-- Layer 2/3 → Layer 5: indegree=15
-- Layer 5 → Layer 6: indegree=20
-- Inhibitory feedback throughout
-
-### Spike Encoding
-
-**Latency Coding** (default):
-- Strong features → Early spikes (43 ms)
-- Weak features → Late spikes (200 ms)
-- Matches biological LGN→V1 timing
-
-### Background Activity
-
-Poisson noise at realistic rates:
-- Layer 2/3: 1.72 MHz
-- Layer 5: 1.74 MHz
-- Layer 6: 1.70 MHz
-- Inhibitory: 1.75 MHz
-
 ## File Structure
 
 ```
@@ -139,6 +96,7 @@ v1_computational/
 
 ## Configuration
 
+If you want to edit
 Edit `config.py` to modify:
 - Video source settings
 - Gabor filter parameters
@@ -162,40 +120,14 @@ For faster performance:
 - Skip `warmup_time_ms` for continuous video
 - Reduce grid size (18x18 → smaller)
 
-## Understanding the Output
 
-### Orientation Map
+### Helping to Understand the Orientation Map
 
 Colors indicate preferred orientation:
 - **Red**: 0° (horizontal)
 - **Green**: 45° (diagonal /)
 - **Blue**: 90° (vertical)
 - **Yellow**: 135° (diagonal \)
-
-### Edge Visualization
-
-Oriented line segments show:
-- **Direction**: Edge orientation
-- **Length/Thickness**: Response strength
-- **Position**: Location in visual field (18x18 grid)
-
-### Layer Activity
-
-Heatmaps showing firing rates:
-- **Layer 4**: Input layer (receives spikes)
-- **Layer 2/3**: Primary output (strongest responses)
-- **Layer 5**: Intermediate processing
-- **Layer 6**: Deep layer processing
-
-## Validation
-
-This model matches the MDPI2021 architecture:
-- Same neuron counts per layer
-- Same connectivity patterns
-- Same synaptic weights
-- Same background activity
-- Same orientation selectivity
-- Same retinotopic organization
 
 ## Differences from NEST Version
 
@@ -211,26 +143,9 @@ This model matches the MDPI2021 architecture:
 
 ## References
 
-Based on:
-- MDPI2021 V1 orientation column model
-- `OrientedColumnV1.py` architecture
-- `Simulation_V1_pinwheel_MEGcomparison.py` connectivity
-- Latency coding from LGN spike data
+Santos-Mayo, Alejandro, Stephan Moratti, Javier de Echegaray, and Gianluca Susi. 
+“A Model of the Early Visual System Based on Parallel Spike-Sequence Detection, 
+Showing Orientation Selectivity.” *Biology* 10, no. 8 (2021): 801. 
+https://doi.org/10.3390/biology10080801.
 
-## Troubleshooting
-
-**No display windows?**
-- Check OpenCV installation: `pip install opencv-python`
-
-**Slow performance?**
-- Reduce `stimulus_time_ms` in `config.py`
-- Set `warmup=False` in pipeline
-
-**Pi camera not connecting?**
-- Verify IP address in `config.py`
-- Ensure Pi is streaming: `ffmpeg -i tcp://...`
-
-## License
-
-Same as parent MDPI2021 repository.
 
